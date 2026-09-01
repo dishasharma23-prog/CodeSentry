@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cs-bg text-cs-text antialiased;
+  }
+
+  ::selection {
+    @apply bg-cs-accent text-black;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0A0A; 
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A2A2A; 
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3A3A3A; 
+}

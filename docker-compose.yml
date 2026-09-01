@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  rag-service:
+    build:
+      context: ./rag-service
+      dockerfile: Dockerfile
+    container_name: codesentry-rag
+    ports:
+      - "${RAG_SERVICE_PORT:-8000}:8000"
+    environment:
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_MODEL=${LLM_MODEL}
+      - CHROMA_PERSIST_DIR=/data/chroma
+      - BM25_PERSIST_DIR=/data/bm25
+      - REPO_STORAGE_PATH=/data/repos
+    volumes:
+      - repo_data:/data/repos
+      - chroma_data:/data/chroma
+      - bm25_data:/data/bm25
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: codesentry-backend
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=${MONGODB_URI}
+      - PYTHON_SERVICE_URL=http://rag-service:8000
+      - REPO_STORAGE_PATH=/data/repos
+      - PORT=3001
+    volumes:
+      - repo_data:/data/repos
+    depends_on:
+      rag-service:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    container_name: codesentry-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    depends_on:
+      - backend
+
+volumes:
+  repo_data:
+  chroma_data:
+  bm25_data:
