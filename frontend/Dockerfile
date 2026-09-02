@@ -5,6 +5,7 @@ RUN npm ci
 COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+RUN mkdir -p /app/public
 RUN npm run build
 
 FROM node:22-slim AS runner
