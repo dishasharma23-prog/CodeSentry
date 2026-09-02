@@ -10,20 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        "cs-bg": "#0A0A0A",
-        "cs-bg-secondary": "#141414",
-        "cs-bg-tertiary": "#1A1A1A",
-        "cs-border": "#2A2A2A",
-        "cs-text": "#F5F0EB",
-        "cs-text-secondary": "#9A9590",
-        "cs-text-muted": "#6B6560",
-        "cs-accent": "#C8E64A",
-        "cs-accent-hover": "#D4EF5A",
-        "cs-critical": "#E84855",
-        "cs-high": "#E88548",
-        "cs-medium": "#E8C848",
-        "cs-low": "#48A8E8",
-        "cs-info": "#9A9590",
+        "cs-bg": "#000000",
+        "cs-bg-secondary": "#080808",
+        "cs-bg-tertiary": "#111111",
+        "cs-border": "#1A1A1A",
+        "cs-text": "#FAFAFA",
+        "cs-text-secondary": "#888888",
+        "cs-text-muted": "#444444",
+        "cs-accent": "#34D399", // Technical green
+        "cs-accent-hover": "#6EE7B7",
+        "cs-critical": "#F87171",
+        "cs-high": "#FBBF24",
+        "cs-medium": "#FCD34D",
+        "cs-low": "#60A5FA",
+        "cs-info": "#9CA3AF",
       },
       fontFamily: {
         sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
@@ -32,17 +32,21 @@ const config: Config = {
       letterSpacing: {
         tightest: '-0.04em',
         widest: '0.2em',
-        logo: '0.3em',
+        logo: '0.25em',
       },
       animation: {
         "fade-in-up": "fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
       keyframes: {
         fadeInUp: {
           "0%": { opacity: "0", transform: "translateY(20px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
-        },
+        }
       },
+      backgroundImage: {
+        'grid-pattern': "linear-gradient(to right, #111 1px, transparent 1px), linear-gradient(to bottom, #111 1px, transparent 1px)",
+      }
     },
   },
   plugins: [],

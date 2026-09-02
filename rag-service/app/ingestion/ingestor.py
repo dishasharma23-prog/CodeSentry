@@ -3,17 +3,19 @@ from typing import List, Dict, Any, Tuple
 from app.models.chunk import CodeChunk
 from app.ast_parser.python_parser import PythonASTParser
 from app.ast_parser.generic_parser import GenericParser
+from app.ast_parser.text_parser import TextParser
 
 class CodeIngestor:
     def __init__(self):
         self.py_parser = PythonASTParser()
         self.gen_parser = GenericParser()
+        self.text_parser = TextParser()
         self.ignored_dirs = {
             '.git', 'node_modules', 'venv', '__pycache__', 'dist', 'build', 
             '.next', 'coverage', '.env', '.venv', 'env', '.tox', 
             '.mypy_cache', '.pytest_cache', '.eggs'
         }
-        self.ignored_exts = {'.pyc', '.egg-info'}
+        self.ignored_exts = {'.pyc', '.egg-info', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.zip', '.tar', '.gz', '.woff', '.woff2', '.ttf', '.mp4'}
 
     def ingest(self, repo_path: str, repository_id: str) -> Tuple[List[CodeChunk], Dict[str, Any]]:
         chunks = []
@@ -55,6 +57,9 @@ class CodeIngestor:
                 elif self.gen_parser.can_parse(file):
                     file_chunks = self.gen_parser.parse(rel_path, source_code, repository_id)
                     lang = self.gen_parser.get_language(file)
+                elif self.text_parser.can_parse(file):
+                    file_chunks = self.text_parser.parse(rel_path, source_code, repository_id)
+                    lang = 'markdown' if file.endswith('.md') else 'text'
                 else:
                     continue
                     

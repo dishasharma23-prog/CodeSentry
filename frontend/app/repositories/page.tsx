@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import { formatNumber } from "@/lib/utils";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { motion } from "framer-motion";
+import DeleteRepositoryButton from "@/components/DeleteRepositoryButton";
 
 export default function RepositoriesPage() {
   const [url, setUrl] = useState("");
@@ -46,60 +47,72 @@ export default function RepositoriesPage() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="max-w-7xl mx-auto px-6 w-full py-16"
+      className="max-w-screen-xl mx-auto px-6 w-full pt-40 pb-32"
     >
-      <header>
-        <h1 className="text-5xl font-light tracking-tight">REPOSITORIES</h1>
+      <header className="mb-24">
+        <p className="text-[10px] tracking-widest text-cs-text-muted mb-6 uppercase">DATA SOURCES</p>
+        <h1 className="text-6xl font-light tracking-tight">REPOSITORIES</h1>
       </header>
 
-      <section className="mt-12 border border-cs-border p-8 bg-cs-bg-secondary/30">
-        <h2 className="text-xs tracking-widest uppercase mb-6 text-cs-text-muted">ANALYZE A REPOSITORY</h2>
-        
-        <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4">
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="GitHub URL (e.g. https://github.com/owner/repo)"
-            className="flex-1 bg-[#0D0D0D] border border-cs-border py-4 px-6 text-cs-text outline-none focus:border-cs-accent transition-colors font-mono text-sm"
-            disabled={isSubmitting}
-          />
-          <button 
-            type="submit" 
-            disabled={isSubmitting || !url.trim()}
-            className="bg-cs-accent text-black px-8 py-4 text-sm tracking-[0.15em] font-medium uppercase disabled:opacity-50 disabled:cursor-not-allowed hover:bg-cs-accent-hover transition-colors"
-          >
-            {isSubmitting ? "PROCESSING..." : "ANALYZE →"}
-          </button>
-        </form>
-        {error && <p className="text-cs-critical text-sm mt-4">{error}</p>}
+      <section className="mb-24 relative overflow-hidden bg-cs-bg border border-cs-border">
+        <div className="absolute inset-0 bg-atmospheric opacity-10 pointer-events-none mix-blend-screen" />
+        <div className="p-12 relative z-10">
+          <h2 className="text-[10px] tracking-widest uppercase mb-8 text-cs-accent">CONNECT NEW REPOSITORY</h2>
+          
+          <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 max-w-3xl">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="GitHub URL (e.g. https://github.com/owner/repo)"
+              className="flex-1 bg-transparent border-b border-cs-border py-4 px-2 text-white placeholder:text-cs-text-muted outline-none focus:border-cs-accent transition-colors font-mono text-xs"
+              disabled={isSubmitting}
+            />
+            <button 
+              type="submit" 
+              disabled={isSubmitting || !url.trim()}
+              className="bg-white text-black px-10 py-4 text-xs tracking-[0.2em] font-medium uppercase disabled:opacity-50 disabled:cursor-not-allowed hover:bg-cs-accent transition-colors"
+            >
+              {isSubmitting ? "PROCESSING..." : "ANALYZE →"}
+            </button>
+          </form>
+          {error && <p className="text-cs-critical text-xs font-mono mt-6">{error}</p>}
+        </div>
       </section>
 
-      <section className="mt-16">
+      <section>
+        <h2 className="text-[10px] tracking-widest text-cs-text-muted mb-8 uppercase">INDEXED CODEBASES</h2>
         {isLoading ? (
-          <LoadingSpinner text="LOADING REPOSITORIES..." />
+          <div className="py-24 border-t border-cs-border">
+            <LoadingSpinner text="LOADING REPOSITORIES..." />
+          </div>
         ) : (
-          <div className="space-y-0">
+          <div className="border-t border-cs-border">
             {repositories.map(repo => (
               <Link href={`/repositories/${repo._id}`} key={repo._id} className="block group">
-                <div className="border-b border-cs-border py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 group-hover:bg-cs-bg-secondary transition-colors px-4 -mx-4">
+                <div className="border-b border-cs-border py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-[#050505] transition-colors -mx-6 px-6">
                   <div className="flex-1">
-                    <h3 className="text-xl">{repo.name}</h3>
-                    <p className="text-sm text-cs-text-secondary mt-1">{repo.owner || "local"}/{repo.name}</p>
+                    <h3 className="text-xl font-light mb-2">{repo.name}</h3>
+                    <p className="text-[11px] font-mono text-cs-text-muted uppercase tracking-wider">{repo.owner || "local"}/{repo.name}</p>
                   </div>
                   <div className="w-32">
                     <StatusBadge status={repo.status} />
                   </div>
-                  <div className="flex-1 flex justify-end items-center gap-8 text-sm text-cs-text-secondary">
+                  <div className="flex-1 flex justify-end items-center gap-8 text-[11px] font-mono uppercase tracking-wider text-cs-text-muted">
                     <span className="hidden md:inline">{formatNumber(repo.stats?.totalFiles)} files</span>
                     <span className="hidden md:inline">{formatNumber(repo.stats?.totalFindings)} findings</span>
-                    <span className="text-cs-accent opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                    <DeleteRepositoryButton 
+                      repositoryId={repo._id} 
+                      repositoryName={repo.name} 
+                      onDeleted={mutate} 
+                    />
+                    <span className="text-cs-text opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                   </div>
                 </div>
               </Link>
             ))}
             {repositories.length === 0 && !isLoading && (
-              <p className="text-cs-text-secondary py-8">No repositories found.</p>
+              <p className="text-cs-text-secondary font-light py-12 text-center">No repositories found.</p>
             )}
           </div>
         )}

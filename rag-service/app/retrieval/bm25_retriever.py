@@ -64,11 +64,16 @@ class BM25Retriever:
         results = []
         for idx in top_indices:
             if scores[idx] > 0:
-                results.append(RetrievalResult(
-                    chunk=chunks[idx],
-                    score=float(scores[idx]),
-                    retrieval_method="bm25"
-                ))
+                chunk = chunks[idx]
+                if chunk.repository_id == repository_id:
+                    results.append(RetrievalResult(
+                        chunk=chunk,
+                        score=float(scores[idx]),
+                        retrieval_method="bm25"
+                    ))
+                else:
+                    import logging
+                    logging.warning(f"BM25 contamination blocked: chunk repo {chunk.repository_id} != requested {repository_id}")
                 
         return results
 

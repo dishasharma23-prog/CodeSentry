@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { use } from "react";
 import Link from "next/link";
@@ -14,7 +14,7 @@ export default function RepositoryDetailPage({ params }: { params: Promise<{ id:
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-6 w-full py-16">
+      <div className="max-w-screen-xl mx-auto px-6 w-full pt-40">
         <LoadingSpinner text="LOADING REPOSITORY..." />
       </div>
     );
@@ -22,8 +22,8 @@ export default function RepositoryDetailPage({ params }: { params: Promise<{ id:
 
   if (!repository) {
     return (
-      <div className="max-w-7xl mx-auto px-6 w-full py-16">
-        <p className="text-cs-critical">Repository not found.</p>
+      <div className="max-w-screen-xl mx-auto px-6 w-full pt-40">
+        <p className="text-cs-critical text-xs font-mono uppercase tracking-widest">Repository not found.</p>
       </div>
     );
   }
@@ -36,63 +36,62 @@ export default function RepositoryDetailPage({ params }: { params: Promise<{ id:
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="max-w-7xl mx-auto px-6 w-full py-16"
+      className="max-w-screen-xl mx-auto px-6 w-full pt-40 pb-32"
     >
-      <nav className="mb-8">
-        <p className="text-xs tracking-widest uppercase text-cs-text-muted">
-          <Link href="/repositories" className="hover:text-cs-text transition-colors">REPOSITORIES</Link> / {repository.name}
+      <nav className="mb-24">
+        <p className="text-[10px] tracking-widest uppercase text-cs-text-muted">
+          <Link href="/repositories" className="hover:text-white transition-colors">DATA SOURCES</Link> / {repository.name}
         </p>
       </nav>
 
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-5xl font-light tracking-tight">{repository.name}</h1>
-          <a href={repository.url} target="_blank" rel="noopener noreferrer" className="text-sm text-cs-text-secondary mt-2 hover:text-cs-text transition-colors block">
+      <header className="flex flex-col gap-6 mb-24">
+        <h1 className="text-6xl font-light tracking-tight">{repository.name}</h1>
+        <div className="flex items-center gap-6">
+          <StatusBadge status={repository.status} />
+          <a href={repository.url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono text-cs-text-secondary hover:text-white transition-colors border-b border-transparent hover:border-white">
             {repository.url}
           </a>
-        </div>
-        <div className="pb-2">
-          <StatusBadge status={repository.status} />
         </div>
       </header>
 
       {repository.error && (
-        <div className="mt-8 border border-cs-critical/50 bg-cs-critical/10 text-cs-critical p-4 text-sm">
+        <div className="mb-24 border border-cs-critical/30 bg-[#1A0505] text-cs-critical p-6 font-mono text-xs">
           ERROR: {repository.error}
         </div>
       )}
 
-      <section className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-8 border-t border-b border-cs-border py-8">
-        <div>
-          <div className="text-4xl font-light">{formatNumber(repository.stats?.totalFiles)}</div>
-          <div className="text-xs uppercase tracking-widest text-cs-text-muted mt-2">FILES</div>
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-px bg-cs-border border border-cs-border overflow-hidden mb-24">
+        <div className="bg-cs-bg p-8">
+          <div className="text-5xl font-light mb-4">{formatNumber(repository.stats?.totalFiles)}</div>
+          <div className="text-[10px] uppercase tracking-widest text-cs-text-secondary">FILES INDEXED</div>
         </div>
-        <div>
-          <div className="text-4xl font-light">{formatNumber(repository.stats?.totalChunks)}</div>
-          <div className="text-xs uppercase tracking-widest text-cs-text-muted mt-2">SYMBOLS</div>
+        <div className="bg-cs-bg p-8">
+          <div className="text-5xl font-light mb-4">{formatNumber(repository.stats?.totalChunks)}</div>
+          <div className="text-[10px] uppercase tracking-widest text-cs-text-secondary">SYMBOLS EXTRACTED</div>
         </div>
-        <div>
-          <div className="text-4xl font-light">{formatNumber(repository.stats?.totalFindings)}</div>
-          <div className="text-xs uppercase tracking-widest text-cs-text-muted mt-2">FINDINGS</div>
+        <div className="bg-cs-bg p-8">
+          <div className="text-5xl font-light mb-4">{formatNumber(repository.stats?.totalFindings)}</div>
+          <div className="text-[10px] uppercase tracking-widest text-cs-text-secondary">AUDIT FINDINGS</div>
         </div>
-        <div>
-          <div className="text-4xl font-light capitalize">{topLanguage}</div>
-          <div className="text-xs uppercase tracking-widest text-cs-text-muted mt-2">LANGUAGE</div>
+        <div className="bg-cs-bg p-8">
+          <div className="text-5xl font-light mb-4 capitalize truncate">{topLanguage}</div>
+          <div className="text-[10px] uppercase tracking-widest text-cs-text-secondary">PRIMARY LANGUAGE</div>
         </div>
       </section>
 
-      <section className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-px bg-cs-border">
-        <Link href={`/repositories/${repository._id}/files`} className="bg-cs-bg p-8 md:p-12 hover:bg-cs-bg-secondary transition-colors group block">
-          <h3 className="text-xl mb-4 group-hover:text-cs-accent transition-colors">EXPLORE FILES →</h3>
-          <p className="text-sm text-cs-text-secondary leading-relaxed">Browse the parsed source code with AST-aware highlighting and component mapping.</p>
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-px bg-cs-border border border-cs-border">
+        <Link href={`/repositories/${repository._id}/files`} className="bg-cs-bg p-12 hover:bg-[#050505] transition-colors group block">
+          <h3 className="text-xl font-light mb-4 group-hover:text-cs-accent transition-colors">EXPLORE FILES →</h3>
+          <p className="text-[11px] font-mono text-cs-text-secondary leading-relaxed uppercase tracking-wider">Browse parsed source code with AST-aware highlighting and component mapping.</p>
         </Link>
-        <Link href={`/repositories/${repository._id}/analysis`} className="bg-cs-bg p-8 md:p-12 hover:bg-cs-bg-secondary transition-colors group block">
-          <h3 className="text-xl mb-4 group-hover:text-cs-accent transition-colors">SECURITY ANALYSIS →</h3>
-          <p className="text-sm text-cs-text-secondary leading-relaxed">View automated security findings grounded in actual source code evidence.</p>
+        <Link href={`/repositories/${repository._id}/analysis`} className="bg-cs-bg p-12 hover:bg-[#050505] transition-colors group block">
+          <h3 className="text-xl font-light mb-4 group-hover:text-cs-accent transition-colors">SECURITY ANALYSIS →</h3>
+          <p className="text-[11px] font-mono text-cs-text-secondary leading-relaxed uppercase tracking-wider">View automated security findings grounded in actual source code evidence.</p>
         </Link>
-        <Link href={`/repositories/${repository._id}/chat`} className="bg-cs-bg p-8 md:p-12 hover:bg-cs-bg-secondary transition-colors group block">
-          <h3 className="text-xl mb-4 group-hover:text-cs-accent transition-colors">ASK QUESTIONS →</h3>
-          <p className="text-sm text-cs-text-secondary leading-relaxed">Query the codebase using our hybrid RAG pipeline for grounded, evidence-based answers.</p>
+        <Link href={`/repositories/${repository._id}/chat`} className="bg-[#0A0A0A] p-12 hover:bg-[#050505] transition-colors group block relative overflow-hidden">
+          <div className="absolute inset-0 bg-atmospheric opacity-10 pointer-events-none mix-blend-screen" />
+          <h3 className="text-xl font-light mb-4 group-hover:text-cs-accent transition-colors relative z-10">ASK QUESTIONS →</h3>
+          <p className="text-[11px] font-mono text-cs-text-secondary leading-relaxed uppercase tracking-wider relative z-10">Query the codebase using our hybrid RAG pipeline for grounded answers.</p>
         </Link>
       </section>
     </motion.div>

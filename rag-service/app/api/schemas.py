@@ -33,6 +33,13 @@ class SecurityAnalysisResponse(BaseModel):
     total_findings: int
     summary: Dict[str, int]
 
+class DeleteRequest(BaseModel):
+    repository_id: str
+
+class DeleteResponse(BaseModel):
+    status: str
+    message: str
+
 class HealthResponse(BaseModel):
     status: str
     version: str

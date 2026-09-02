@@ -20,6 +20,9 @@ export const api = {
     headers: {'Content-Type': 'application/json'}, 
     body: JSON.stringify({url})
   }),
+  deleteRepository: (id: string) => fetchJson(`${API_URL}/api/repositories/${id}`, {
+    method: 'DELETE'
+  }),
   getRepositoryStatus: (id: string) => fetchJson(`${API_URL}/api/repositories/${id}/status`),
   
   // Files

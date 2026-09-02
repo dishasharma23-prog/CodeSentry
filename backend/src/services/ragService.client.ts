@@ -67,6 +67,21 @@ class RagServiceClient {
       throw new AppError(`Security analysis failed: ${error.message}`, 500);
     }
   }
+
+  async deleteRepository(repositoryId: string): Promise<any> {
+    try {
+      const response = await this.client.post('/delete', {
+        repository_id: repositoryId,
+      }, {
+        timeout: 30 * 1000, // 30 seconds
+      });
+      return response.data;
+    } catch (error: any) {
+      logger.error(`Delete failed for repository ${repositoryId}`, { error: error.message });
+      // We don't throw here to allow cleanup to continue even if RAG is down
+      return { status: 'error', message: error.message };
+    }
+  }
 }
 
 export const ragServiceClient = new RagServiceClient();

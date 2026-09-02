@@ -66,7 +66,8 @@ class DenseRetriever:
 
         results = collection.query(
             query_embeddings=[query_embedding],
-            n_results=top_k
+            n_results=top_k,
+            where={"repository_id": repository_id}
         )
 
         retrieval_results = []

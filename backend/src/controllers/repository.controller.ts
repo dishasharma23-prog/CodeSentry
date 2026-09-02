@@ -98,3 +98,16 @@ export const getFileContent = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+export const deleteRepository = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await repositoryService.delete(id);
+    res.json({
+      success: true,
+      message: 'Repository successfully deleted',
+    });
+  } catch (error) {
+    next(error);
+  }
+};

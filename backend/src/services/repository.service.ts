@@ -45,6 +45,37 @@ export class RepositoryService {
     return repo.status;
   }
 
+  async delete(id: string): Promise<void> {
+    const repo = await this.findById(id);
+    
+    // 1. Delete index data via RAG service
+    try {
+      await ragServiceClient.deleteRepository(id);
+    } catch (error: any) {
+      logger.warn(`Failed to delete index data for repo ${id}, continuing cleanup`, { error: error.message });
+    }
+
+    // 2. Delete file system data
+    const localPath = path.resolve(config.repoStoragePath, id);
+    try {
+      await fs.rm(localPath, { recursive: true, force: true });
+    } catch (error: any) {
+      logger.warn(`Failed to delete file system data for repo ${id}, continuing cleanup`, { error: error.message });
+    }
+
+    // 3. Delete associated database records
+    const { Finding } = await import('../models/Finding');
+    const { QueryHistory } = await import('../models/QueryHistory');
+    
+    await Finding.deleteMany({ repositoryId: id }).catch(e => logger.warn('Finding deletion error', { error: e.message }));
+    await QueryHistory.deleteMany({ repositoryId: id }).catch(e => logger.warn('QueryHistory deletion error', { error: e.message }));
+    
+    // 4. Delete the repository itself
+    await Repository.findByIdAndDelete(id);
+    
+    logger.info(`Successfully deleted repository ${id}`);
+  }
+
   async processRepository(id: string): Promise<void> {
     const repo = await this.findById(id);
     const localPath = path.join(config.repoStoragePath, id);

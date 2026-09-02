@@ -35,7 +35,7 @@ class RAGPipeline:
             return response.choices[0].message.content
         return "Unsupported LLM provider"
 
-    def _parse_citations(self, answer: str, chunks: List[RetrievalResult]) -> List[SourceCitation]:
+    def _parse_citations(self, answer: str, chunks: List[RetrievalResult], repository_id: str) -> List[SourceCitation]:
         citations = []
         cited_files = set()
         
@@ -43,7 +43,7 @@ class RAGPipeline:
         for match in matches:
             file_path, func_name, start, end = match.groups()
             for res in chunks:
-                if res.chunk.file_path == file_path:
+                if res.chunk.file_path == file_path and res.chunk.repository_id == repository_id:
                     citations.append(SourceCitation(
                         file_path=res.chunk.file_path,
                         symbol_name=res.chunk.symbol_name,
@@ -57,7 +57,7 @@ class RAGPipeline:
                     break
                     
         for res in chunks:
-            if res.chunk.file_path not in cited_files:
+            if res.chunk.file_path not in cited_files and res.chunk.repository_id == repository_id:
                 citations.append(SourceCitation(
                     file_path=res.chunk.file_path,
                     symbol_name=res.chunk.symbol_name,
@@ -81,6 +81,16 @@ class RAGPipeline:
         reranked = self.reranker.rerank(question, candidates, self.settings.TOP_K_RERANK)
         print(f"Reranker time: {time.time() - start_rerank:.3f}s")
         
+        # DEFENSIVE VALIDATION
+        valid_reranked = []
+        for r in reranked:
+            if r.chunk.repository_id == repository_id:
+                valid_reranked.append(r)
+            else:
+                import logging
+                logging.warning(f"CRITICAL CONTAMINATION: Chunk from repo {r.chunk.repository_id} found in query for {repository_id}. Discarding.")
+        reranked = valid_reranked
+        
         context_parts = []
         for r in reranked:
             context_parts.append(
@@ -95,7 +105,7 @@ class RAGPipeline:
         print(f"Gemini time: {time.time() - start_llm:.3f}s")
         
         start_parse = time.time()
-        sources = self._parse_citations(answer, reranked)
+        sources = self._parse_citations(answer, reranked, repository_id)
         print(f"Parsing time: {time.time() - start_parse:.3f}s")
         
         return RAGResponse(

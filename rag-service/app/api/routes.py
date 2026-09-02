@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.api.schemas import (
     IndexRequest, IndexResponse, QueryRequest, QueryResponse, 
-    SecurityAnalysisRequest, SecurityAnalysisResponse, HealthResponse
+    SecurityAnalysisRequest, SecurityAnalysisResponse, HealthResponse,
+    DeleteRequest, DeleteResponse
 )
 from app.ingestion.ingestor import CodeIngestor
 from app.embeddings.embedder import CodeEmbedder
@@ -94,4 +95,21 @@ async def analyze_security(
     except Exception as e:
         import traceback
         traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/delete", response_model=DeleteResponse)
+async def delete_repository(
+    req: DeleteRequest,
+    dense: DenseRetriever = Depends(get_dense_retriever),
+    bm25: BM25Retriever = Depends(get_bm25_retriever)
+):
+    try:
+        dense.delete_repository(req.repository_id)
+        bm25.delete_repository(req.repository_id)
+        
+        return DeleteResponse(
+            status="success",
+            message=f"Deleted index data for repository {req.repository_id}"
+        )
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
