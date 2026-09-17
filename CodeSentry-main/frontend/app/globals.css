@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cs-bg text-cs-text antialiased;
+  }
+
+  ::selection {
+    @apply bg-cs-accent/30 text-cs-text;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1A1A1A; 
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #333333; 
+}
+
+.bg-grid-pattern {
+  background-size: 40px 40px;
+}
