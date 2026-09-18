@@ -6,7 +6,7 @@ CodeSentry was built with an experimental, cinematic, and minimal dark UI to emp
 
 ##  Live Demo
 
-**Production:** http://159.89.192.231:3000
+
 
 Try it by providing a public GitHub repository and asking questions about its architecture, implementation, or security.
 
