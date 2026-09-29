@@ -4,11 +4,6 @@
 
 CodeSentry was built with an experimental, cinematic, and minimal dark UI to emphasize data clarity, deep technical focus, and premium typography.
 
-##  Live Demo
-
-
-
-Try it by providing a public GitHub repository and asking questions about its architecture, implementation, or security.
 
 **Source Code:** https://github.com/dishasharma23-prog/CodeSentry
 
