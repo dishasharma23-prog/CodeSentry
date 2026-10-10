@@ -20,7 +20,7 @@ def get_bm25_retriever(): return BM25Retriever()
 def get_rag_pipeline(): return RAGPipeline()
 def get_security_analyzer(): return SecurityAnalyzer()
 
-@router.get("/health", response_model=HealthResponse)
+@router.api_route("/health", methods=["GET", "HEAD"], response_model=HealthResponse)
 async def health_check():
     return HealthResponse(
         status="ok",
