@@ -23,55 +23,69 @@ class RagServiceClient {
   }
 
   async indexRepository(repositoryId: string, repoPath: string): Promise<any> {
-    try {
-      logger.info(`Sending index request for ${repositoryId} to RAG service`);
-      const response = await this.client.post('/index', {
-        repository_id: repositoryId,
-        repo_path: repoPath,
-      }, {
-        timeout: 5 * 60 * 1000, // 5 minutes
-      });
-      return response.data;
-    } catch (error: any) {
-      const baseUrl = error.config?.baseURL || 'unknown-base';
-      const requestUrl = error.config?.url || '/index';
-      
-      if (error.response) {
-        let safeData = '';
-        try {
-          if (error.response.data === null || error.response.data === undefined) {
-            safeData = String(error.response.data);
-          } else if (typeof error.response.data === 'object') {
-            safeData = JSON.stringify(error.response.data);
+    const maxRetries = 4; // 5 attempts total
+    const delays = [5000, 10000, 20000, 40000]; 
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        logger.info(`Sending index request for ${repositoryId} to RAG service (Attempt ${attempt + 1}/${maxRetries + 1})`);
+        const response = await this.client.post('/index', {
+          repository_id: repositoryId,
+          repo_path: repoPath,
+        }, {
+          timeout: 90 * 1000, // 90 seconds to allow cold start
+        });
+        return response.data;
+      } catch (error: any) {
+        const isRetriable = !error.response || [429, 502, 503, 504].includes(error.response.status);
+        
+        if (attempt === maxRetries || !isRetriable) {
+          const baseUrl = error.config?.baseURL || 'unknown-base';
+          const requestUrl = error.config?.url || '/index';
+          
+          if (error.response) {
+            let safeData = '';
+            try {
+              if (error.response.data === null || error.response.data === undefined) {
+                safeData = String(error.response.data);
+              } else if (typeof error.response.data === 'object') {
+                safeData = JSON.stringify(error.response.data);
+              } else {
+                safeData = String(error.response.data);
+              }
+            } catch (serializationError) {
+              safeData = '[Serialization Failed]';
+            }
+            
+            if (safeData.length > 500) {
+              safeData = safeData.substring(0, 500) + '... [truncated]';
+            }
+            
+            logger.error(`HTTP error while indexing repository ${repositoryId}`, {
+              baseURL: baseUrl,
+              url: requestUrl,
+              status: error.response.status,
+              responseData: safeData,
+              message: error.message
+            });
+          } else if (error.request) {
+            logger.error(`Network error while indexing repository ${repositoryId}`, {
+              baseURL: baseUrl,
+              url: requestUrl,
+              code: error.code,
+              message: error.message
+            });
           } else {
-            safeData = String(error.response.data);
+            logger.error(`Failed to setup index request for repository ${repositoryId}`, { error: error.message });
           }
-        } catch (serializationError) {
-          safeData = '[Serialization Failed]';
+          throw new AppError(`Failed to index repository: ${error.message}`, 500);
         }
-        
-        if (safeData.length > 500) {
-          safeData = safeData.substring(0, 500) + '... [truncated]';
-        }
-        
-        logger.error(`HTTP error while indexing repository ${repositoryId}`, {
-          baseURL: baseUrl,
-          url: requestUrl,
-          status: error.response.status,
-          responseData: safeData,
-          message: error.message
-        });
-      } else if (error.request) {
-        logger.error(`Network error while indexing repository ${repositoryId}`, {
-          baseURL: baseUrl,
-          url: requestUrl,
-          code: error.code,
-          message: error.message
-        });
-      } else {
-        logger.error(`Failed to setup index request for repository ${repositoryId}`, { error: error.message });
+
+        // Backoff and retry
+        const delayMs = delays[attempt];
+        logger.warn(`RAG service unavailable (status ${error.response?.status || 'network error'}). Retrying in ${delayMs / 1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
       }
-      throw new AppError(`Failed to index repository: ${error.message}`, 500);
     }
   }
 
