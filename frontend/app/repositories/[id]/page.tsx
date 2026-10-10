@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { use } from "react";
 import Link from "next/link";
@@ -81,16 +81,16 @@ export default function RepositoryDetailPage({ params }: { params: Promise<{ id:
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-px bg-cs-border border border-cs-border">
         <Link href={`/repositories/${repository._id}/files`} className="bg-cs-bg p-12 hover:bg-[#050505] transition-colors group block">
-          <h3 className="text-xl font-light mb-4 group-hover:text-cs-accent transition-colors">EXPLORE FILES →</h3>
+          <h3 className="text-xl font-light mb-4 group-hover:text-cs-accent transition-colors">EXPLORE FILES ?</h3>
           <p className="text-[11px] font-mono text-cs-text-secondary leading-relaxed uppercase tracking-wider">Browse parsed source code with AST-aware highlighting and component mapping.</p>
         </Link>
-        <Link href={`/repositories/${repository._id}/analysis`} className="bg-cs-bg p-12 hover:bg-[#050505] transition-colors group block">
-          <h3 className="text-xl font-light mb-4 group-hover:text-cs-accent transition-colors">SECURITY ANALYSIS →</h3>
+        <Link href={`/repositories/${repository._id}/security`} className="bg-cs-bg p-12 hover:bg-[#050505] transition-colors group block">
+          <h3 className="text-xl font-light mb-4 group-hover:text-cs-accent transition-colors">SECURITY ANALYSIS ?</h3>
           <p className="text-[11px] font-mono text-cs-text-secondary leading-relaxed uppercase tracking-wider">View automated security findings grounded in actual source code evidence.</p>
         </Link>
-        <Link href={`/repositories/${repository._id}/chat`} className="bg-[#0A0A0A] p-12 hover:bg-[#050505] transition-colors group block relative overflow-hidden">
+        <Link href={`/repositories/${repository._id}/query`} className="bg-[#0A0A0A] p-12 hover:bg-[#050505] transition-colors group block relative overflow-hidden">
           <div className="absolute inset-0 bg-atmospheric opacity-10 pointer-events-none mix-blend-screen" />
-          <h3 className="text-xl font-light mb-4 group-hover:text-cs-accent transition-colors relative z-10">ASK QUESTIONS →</h3>
+          <h3 className="text-xl font-light mb-4 group-hover:text-cs-accent transition-colors relative z-10">ASK QUESTIONS ?</h3>
           <p className="text-[11px] font-mono text-cs-text-secondary leading-relaxed uppercase tracking-wider relative z-10">Query the codebase using our hybrid RAG pipeline for grounded answers.</p>
         </Link>
       </section>
