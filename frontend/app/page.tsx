@@ -52,14 +52,18 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Right Side: Intentional Atmospheric Negative Space */}
+          {/* Right Side: Minimalist Terminal Image */}
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 2, delay: 0.5 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 2, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="relative h-full min-h-[400px] flex items-center justify-center lg:justify-end"
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.05)_0%,rgba(0,0,0,0)_50%)] mix-blend-screen pointer-events-none" />
+            <img 
+              src="/hero_computer.jpg"
+              alt="CodeSentry Cyber Terminal"
+              className="w-full max-w-[550px] rounded-sm shadow-[0_0_80px_rgba(52,211,153,0.08)] border border-cs-border opacity-90 hover:opacity-100 transition-opacity duration-500"
+            />
           </motion.div>
 
         </div>
