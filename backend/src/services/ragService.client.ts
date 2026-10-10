@@ -33,7 +33,44 @@ class RagServiceClient {
       });
       return response.data;
     } catch (error: any) {
-      logger.error(`Failed to index repository ${repositoryId}`, { error: error.message });
+      const baseUrl = error.config?.baseURL || 'unknown-base';
+      const requestUrl = error.config?.url || '/index';
+      
+      if (error.response) {
+        let safeData = '';
+        try {
+          if (error.response.data === null || error.response.data === undefined) {
+            safeData = String(error.response.data);
+          } else if (typeof error.response.data === 'object') {
+            safeData = JSON.stringify(error.response.data);
+          } else {
+            safeData = String(error.response.data);
+          }
+        } catch (serializationError) {
+          safeData = '[Serialization Failed]';
+        }
+        
+        if (safeData.length > 500) {
+          safeData = safeData.substring(0, 500) + '... [truncated]';
+        }
+        
+        logger.error(`HTTP error while indexing repository ${repositoryId}`, {
+          baseURL: baseUrl,
+          url: requestUrl,
+          status: error.response.status,
+          responseData: safeData,
+          message: error.message
+        });
+      } else if (error.request) {
+        logger.error(`Network error while indexing repository ${repositoryId}`, {
+          baseURL: baseUrl,
+          url: requestUrl,
+          code: error.code,
+          message: error.message
+        });
+      } else {
+        logger.error(`Failed to setup index request for repository ${repositoryId}`, { error: error.message });
+      }
       throw new AppError(`Failed to index repository: ${error.message}`, 500);
     }
   }
