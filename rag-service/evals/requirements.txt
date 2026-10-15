@@ -1,3 +1,6 @@
 # Only needed to run evals/run_rag_evals.py (kept out of the service image).
 ai-evaluation==1.1.0
 httpx==0.28.1
+# ai-evaluation 1.1.0 allows any litellm<2 but caps openai<2, while newer litellm
+# releases need openai>=2, so pip can pick a combination that won't install.
+litellm>=1.77.4,<1.81
