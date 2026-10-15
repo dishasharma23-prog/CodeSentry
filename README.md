@@ -62,7 +62,7 @@ PORT=3001
 # ==========================================
 LLM_PROVIDER=gemini
 LLM_API_KEY=your_gemini_api_key_here
-LLM_MODEL=gemini-2.0-flash
+LLM_MODEL=gemini-2.5-flash
 
 # (Optional) Map ports if overriding the defaults
 FRONTEND_PORT=3000
@@ -127,7 +127,7 @@ export GEMINI_API_KEY=...   # used by the judge
 python evals/run_rag_evals.py --repo-id <id from /repositories/<id>> \
     --questions evals/questions.example.json
 ```
-Each answer is scored for **code groundedness** (are claims about the code backed by the retrieved snippets?), **retrieval relevance** (did retrieval find the right code?) and **citation validity** (does it cite only files it actually retrieved?). Results are saved to `eval_results.json`.
+Each answer is scored for **code groundedness** (are claims about the code backed by the retrieved snippets?), **retrieval relevance** (did retrieval find the right code?) and **citation validity** (does it cite only files it actually retrieved?). Results are saved to `eval_results.json`. Each question costs one answer plus two judge calls, so on a free Gemini key (limited requests per day) add `--limit 3` to run only the first few questions.
 
 ---
 

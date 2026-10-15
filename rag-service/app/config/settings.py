@@ -4,7 +4,7 @@ from functools import lru_cache
 class Settings(BaseSettings):
     LLM_PROVIDER: str = 'gemini'
     LLM_API_KEY: str = ''
-    LLM_MODEL: str = 'gemini-2.0-flash'
+    LLM_MODEL: str = 'gemini-2.5-flash'
     CHROMA_PERSIST_DIR: str = '/data/chroma'
     BM25_PERSIST_DIR: str = '/data/bm25'
     REPO_STORAGE_PATH: str = './repos'

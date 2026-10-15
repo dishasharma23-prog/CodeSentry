@@ -83,7 +83,11 @@ def judge(criteria: str, model: str, question: str, context: str, answer: str) -
     except Exception as e:  # network, auth, quota...
         return {"score": None, "error": f"{type(e).__name__}: {e}"}
     reason = str(r.reason or "")
-    if r.status != "completed" or r.error or reason.startswith("Failed to parse"):
+    # ai-evaluation 1.1.0 reports some failures as status="completed", score=0.0, with
+    # the problem only in the reason text: an unparseable judge reply, or a provider
+    # error such as a 429 quota or 503. Those are errors, not verdicts.
+    if (r.status != "completed" or r.error
+            or reason.startswith(("Failed to parse", "LLM provider failed"))):
         return {"score": None, "error": r.error or reason[:200]}
     return {"score": r.score, "reason": _reason_text(reason)}
 
@@ -96,13 +100,20 @@ def _reason_text(raw: str) -> str:
 
 
 def check_citations(answer: str, sources: list) -> dict:
+    """Every cited file must be one that was retrieved.
+
+    An answer with no citations is "n/a", not a failure: a correct "this code does not
+    do that" answer has nothing to cite. Whether such an answer is right is what
+    code_groundedness judges.
+    """
     cited = [m.group(1) for m in CITATION_RE.finditer(answer)]
+    if not cited:
+        return {"score": None, "na": True, "reason": "no citations in the answer (n/a)"}
     retrieved = {s["file_path"] for s in sources}
     unknown = sorted({f for f in cited if f not in retrieved})
     return {
-        "score": 1.0 if cited and not unknown else 0.0,
-        "reason": ("no [SOURCE: ...] citation in the answer" if not cited
-                   else f"cites files that were not retrieved: {unknown}" if unknown
+        "score": 0.0 if unknown else 1.0,
+        "reason": (f"cites files that were not retrieved: {unknown}" if unknown
                    else f"{len(cited)} citation(s), all retrieved"),
     }
 
@@ -112,14 +123,17 @@ def main() -> int:
     p.add_argument("--repo-id", required=True, help="CodeSentry repository id")
     p.add_argument("--questions", default="evals/questions.example.json")
     p.add_argument("--api", default="http://localhost:8000", help="RAG service URL")
-    p.add_argument("--judge-model", default="gemini/gemini-2.0-flash",
+    p.add_argument("--judge-model", default="gemini/gemini-2.5-flash",
                    help="LiteLLM model string for the judge (needs that provider's API key)")
+    p.add_argument("--limit", type=int, default=None,
+                   help="only run the first N questions (each costs 1 answer + 2 judge calls, "
+                        "which matters on free-tier daily quotas)")
     p.add_argument("--timeout", type=float, default=120.0)
     p.add_argument("--out", default="eval_results.json")
     args = p.parse_args()
 
     with open(args.questions) as f:
-        questions = json.load(f)
+        questions = json.load(f)[: args.limit]
 
     rows = []
     for i, item in enumerate(questions, 1):
@@ -147,15 +161,22 @@ def main() -> int:
         rows.append(row)
         for m in ("code_groundedness", "retrieval_relevance", "citations_valid"):
             r = row[m]
-            shown = "ERROR" if r["score"] is None else f"{r['score']:.2f}"
+            shown = ("n/a" if r.get("na") else "ERROR" if r["score"] is None
+                     else f"{r['score']:.2f}")
             print(f"    {m:20} {shown:>5}  {r.get('reason') or r.get('error', '')}"[:160])
 
-    print("\nSummary (errors excluded from averages)")
+    print("\nSummary (errors and n/a excluded from averages)")
     for m in ("code_groundedness", "retrieval_relevance", "citations_valid"):
-        scores = [r[m]["score"] for r in rows if m in r and r[m]["score"] is not None]
-        errors = sum(1 for r in rows if m in r and r[m]["score"] is None)
+        scored = [r[m] for r in rows if m in r]
+        scores = [s["score"] for s in scored if s["score"] is not None]
+        na = sum(1 for s in scored if s.get("na"))
+        errors = sum(1 for s in scored if s["score"] is None and not s.get("na"))
         avg = f"{statistics.mean(scores):.2f}" if scores else "n/a"
-        print(f"  {m:20} avg {avg}  over {len(scores)} answers, {errors} judge errors")
+        print(f"  {m:20} avg {avg}  over {len(scores)} answers, {errors} errors, {na} n/a")
+    failed = sum(1 for r in rows if "error" in r)
+    if failed:
+        print(f"  {failed} question(s) got no answer from CodeSentry "
+              "(a 500 here is often the LLM provider's quota or rate limit)")
     lat = [r["latency_s"] for r in rows if "latency_s" in r]
     if lat:
         print(f"  {'latency':20} median {statistics.median(lat):.1f}s")
