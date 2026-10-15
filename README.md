@@ -115,6 +115,22 @@ npm run dev
 
 ---
 
+## Tracing & Evals (Future AGI, optional)
+
+**Tracing.** Set `FI_API_KEY` and `FI_SECRET_KEY` (from your [Future AGI](https://app.futureagi.com) account) in the RAG service's environment. Each question then becomes one trace in the `codesentry` project, with spans for hybrid retrieval, cross-encoder reranking and the Gemini/OpenAI call, including the retrieved chunks, model and token usage. Without the keys tracing stays off and nothing changes.
+
+**Evals.** With the RAG service running and a repository indexed:
+```bash
+cd rag-service
+pip install -r evals/requirements.txt
+export GEMINI_API_KEY=...   # used by the judge
+python evals/run_rag_evals.py --repo-id <id from /repositories/<id>> \
+    --questions evals/questions.example.json
+```
+Each answer is scored for **code groundedness** (are claims about the code backed by the retrieved snippets?), **retrieval relevance** (did retrieval find the right code?) and **citation validity** (does it cite only files it actually retrieved?). Results are saved to `eval_results.json`.
+
+---
+
 ## Key Features
 
 *   **Hybrid Retrieval (Dense + Sparse):** Combines contextual understanding of embeddings with the exact-keyword matching of BM25, fused via Reciprocal Rank Fusion (RRF).
