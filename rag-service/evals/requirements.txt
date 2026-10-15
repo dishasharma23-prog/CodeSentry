@@ -1,0 +1,3 @@
+# Only needed to run evals/run_rag_evals.py (kept out of the service image).
+ai-evaluation==1.1.0
+httpx==0.28.1

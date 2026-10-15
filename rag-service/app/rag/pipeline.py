@@ -1,10 +1,15 @@
+import logging
 import re
+import time
 from typing import List
 from app.models.chunk import RAGResponse, SourceCitation, RetrievalResult
 from app.retrieval.hybrid_retriever import HybridRetriever
 from app.reranking.reranker import CrossEncoderReranker
 from app.config.settings import get_settings
 from app.rag.prompts import RAG_SYSTEM_PROMPT, RAG_QUERY_TEMPLATE
+from app.observability import span, record_documents
+
+logger = logging.getLogger(__name__)
 
 class RAGPipeline:
     def __init__(self):
@@ -14,14 +19,17 @@ class RAGPipeline:
         
     def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
         if self.settings.LLM_PROVIDER == 'gemini':
-            import google.generativeai as genai
-            genai.configure(api_key=self.settings.LLM_API_KEY)
-            model = genai.GenerativeModel(
-                model_name=self.settings.LLM_MODEL,
-                system_instruction=system_prompt
+            # google-genai is Google's current SDK (google-generativeai is deprecated)
+            # and is the one Future AGI's traceAI instrumentor hooks into.
+            from google import genai
+            from google.genai import types
+            client = genai.Client(api_key=self.settings.LLM_API_KEY)
+            response = client.models.generate_content(
+                model=self.settings.LLM_MODEL,
+                contents=user_prompt,
+                config=types.GenerateContentConfig(system_instruction=system_prompt),
             )
-            response = model.generate_content(user_prompt)
-            return response.text
+            return response.text or ""
         elif self.settings.LLM_PROVIDER == 'openai':
             from openai import OpenAI
             client = OpenAI(api_key=self.settings.LLM_API_KEY)
@@ -72,44 +80,58 @@ class RAGPipeline:
         return citations
 
     def query(self, question: str, repository_id: str) -> RAGResponse:
-        import time
-        start_ret = time.time()
-        candidates = self.hybrid_retriever.search(question, repository_id, self.settings.TOP_K_RETRIEVAL)
-        print(f"Hybrid Retriever time: {time.time() - start_ret:.3f}s")
-        
-        start_rerank = time.time()
-        reranked = self.reranker.rerank(question, candidates, self.settings.TOP_K_RERANK)
-        print(f"Reranker time: {time.time() - start_rerank:.3f}s")
-        
-        # DEFENSIVE VALIDATION
-        valid_reranked = []
-        for r in reranked:
-            if r.chunk.repository_id == repository_id:
-                valid_reranked.append(r)
-            else:
-                import logging
-                logging.warning(f"CRITICAL CONTAMINATION: Chunk from repo {r.chunk.repository_id} found in query for {repository_id}. Discarding.")
-        reranked = valid_reranked
-        
-        context_parts = []
-        for r in reranked:
-            context_parts.append(
-                f"--- File: {r.chunk.file_path} | {r.chunk.symbol_type}: {r.chunk.symbol_name} | Lines {r.chunk.start_line}-{r.chunk.end_line} ---\n{r.chunk.source_code}"
+        # Each stage is a span when Future AGI tracing is on (see app/observability.py),
+        # so per-stage timings live in the trace; debug logs keep them visible locally.
+        with span("rag_query", "chain", input_value=question) as root:
+            if root:
+                root.set_attribute("codesentry.repository_id", repository_id)
+
+            start = time.time()
+            with span("hybrid_retrieval", "retriever", input_value=question) as s:
+                candidates = self.hybrid_retriever.search(question, repository_id, self.settings.TOP_K_RETRIEVAL)
+                # Record now: the reranker overwrites these results' scores in place.
+                record_documents(s, candidates)
+            logger.debug("Hybrid retrieval time: %.3fs", time.time() - start)
+
+            start = time.time()
+            with span("cross_encoder_rerank", "reranker", input_value=question) as s:
+                reranked = self.reranker.rerank(question, candidates, self.settings.TOP_K_RERANK)
+                if s:
+                    s.set_attribute("reranker.model_name", self.settings.RERANKER_MODEL)
+                    s.set_attribute("reranker.top_k", self.settings.TOP_K_RERANK)
+                record_documents(s, reranked, prefix="reranker.output_documents")
+            logger.debug("Rerank time: %.3fs", time.time() - start)
+
+            # DEFENSIVE VALIDATION
+            valid_reranked = []
+            for r in reranked:
+                if r.chunk.repository_id == repository_id:
+                    valid_reranked.append(r)
+                else:
+                    logger.warning(f"CRITICAL CONTAMINATION: Chunk from repo {r.chunk.repository_id} found in query for {repository_id}. Discarding.")
+            reranked = valid_reranked
+
+            context_parts = []
+            for r in reranked:
+                context_parts.append(
+                    f"--- File: {r.chunk.file_path} | {r.chunk.symbol_type}: {r.chunk.symbol_name} | Lines {r.chunk.start_line}-{r.chunk.end_line} ---\n{r.chunk.source_code}"
+                )
+            context_str = "\n\n".join(context_parts)
+
+            user_prompt = RAG_QUERY_TEMPLATE.format(query=question, context=context_str)
+
+            start = time.time()
+            answer = self._call_llm(RAG_SYSTEM_PROMPT, user_prompt)
+            logger.debug("LLM time: %.3fs", time.time() - start)
+
+            sources = self._parse_citations(answer, reranked, repository_id)
+
+            if root:
+                root.set_attribute("output.value", answer)
+                root.set_attribute("codesentry.citation_count", len(sources))
+
+            return RAGResponse(
+                answer=answer,
+                sources=sources,
+                query=question
             )
-        context_str = "\n\n".join(context_parts)
-        
-        user_prompt = RAG_QUERY_TEMPLATE.format(query=question, context=context_str)
-        
-        start_llm = time.time()
-        answer = self._call_llm(RAG_SYSTEM_PROMPT, user_prompt)
-        print(f"Gemini time: {time.time() - start_llm:.3f}s")
-        
-        start_parse = time.time()
-        sources = self._parse_citations(answer, reranked, repository_id)
-        print(f"Parsing time: {time.time() - start_parse:.3f}s")
-        
-        return RAGResponse(
-            answer=answer,
-            sources=sources,
-            query=question
-        )

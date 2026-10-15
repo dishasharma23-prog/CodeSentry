@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
+from app.observability import setup_tracing
+
+# Instrument LLM clients before any request is served (no-op without Future AGI keys).
+setup_tracing()
 
 app = FastAPI(title="CodeSentry RAG Service", version="1.0.0")
 

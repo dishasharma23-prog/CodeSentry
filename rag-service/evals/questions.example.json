@@ -1,0 +1,9 @@
+[
+  {"question": "Where is user authentication handled, and how are passwords checked?"},
+  {"question": "Are there any SQL queries built by string formatting or concatenation?"},
+  {"question": "Does the code run shell commands with user-controlled input?"},
+  {"question": "Where are secrets such as API keys or passwords loaded or stored?"},
+  {"question": "Is any user input deserialized with pickle, yaml.load, or eval?"},
+  {"question": "Which HTTP endpoints accept file uploads, and how are file paths validated?"},
+  {"question": "Is there a function that sends payments to the moon?"}
+]

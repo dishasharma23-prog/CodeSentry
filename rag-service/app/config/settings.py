@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     TOP_K_RERANK: int = 5
     RRF_K: int = 60
 
+    # Future AGI tracing: leave blank to keep tracing off
+    FI_API_KEY: str = ''
+    FI_SECRET_KEY: str = ''
+    FI_PROJECT_NAME: str = 'codesentry'
+
     class Config:
         env_file = ".env"
         extra = "ignore"

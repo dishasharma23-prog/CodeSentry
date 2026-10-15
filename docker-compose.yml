@@ -21,6 +21,9 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_MODEL=${LLM_MODEL:-gemini-2.0-flash}
+      - FI_API_KEY=${FI_API_KEY:-}
+      - FI_SECRET_KEY=${FI_SECRET_KEY:-}
+      - FI_PROJECT_NAME=${FI_PROJECT_NAME:-codesentry}
       - CHROMA_PERSIST_DIR=/data/chroma
       - BM25_PERSIST_DIR=/data/bm25
       - REPO_STORAGE_PATH=/data/repos
