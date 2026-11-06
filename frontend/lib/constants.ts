@@ -1,4 +1,8 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')
+    ? 'https://codesentry-backendd.onrender.com'
+    : 'http://localhost:3001');
 
 export const SEVERITY_COLORS = {
   critical: 'text-cs-critical',
