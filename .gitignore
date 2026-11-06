@@ -38,6 +38,7 @@ docker-compose.override.yml
 # Logs
 *.log
 logs/
+eval_results.json
 
 # Coverage
 coverage/

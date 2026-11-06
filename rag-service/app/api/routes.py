@@ -28,6 +28,67 @@ async def health_check():
         models_loaded={"sentence-transformers": True, "cross-encoder": True}
     )
 
+import os
+import io
+import shutil
+import logging
+import subprocess
+import urllib.request
+import zipfile
+from app.config.settings import get_settings
+
+logger = logging.getLogger(__name__)
+
+def ensure_repo_cloned(repository_id: str, repo_url: str) -> str:
+    settings = get_settings()
+    base_storage = settings.REPO_STORAGE_PATH
+    try:
+        os.makedirs(base_storage, exist_ok=True)
+    except OSError:
+        base_storage = os.path.join(os.getcwd(), "data", "repos")
+        os.makedirs(base_storage, exist_ok=True)
+
+    target_dir = os.path.abspath(os.path.join(base_storage, repository_id))
+    if os.path.isdir(target_dir) and any(os.scandir(target_dir)):
+        return target_dir
+
+    os.makedirs(target_dir, exist_ok=True)
+
+    # 1. Attempt git clone first
+    try:
+        logger.info("Attempting git clone for %s into %s", repo_url, target_dir)
+        res = subprocess.run(["git", "clone", "--depth", "1", repo_url, target_dir], capture_output=True, text=True, timeout=120)
+        if res.returncode == 0 and any(os.scandir(target_dir)):
+            logger.info("Successfully cloned %s", repo_url)
+            return target_dir
+    except Exception as e:
+        logger.warning("git clone failed: %s, falling back to archive download", e)
+
+    # 2. Fallback: Download archive via urllib (works without git CLI)
+    clean_url = repo_url.rstrip("/").removesuffix(".git")
+    zip_url = f"{clean_url}/archive/HEAD.zip"
+    logger.info("Downloading repository archive from %s", zip_url)
+    req = urllib.request.Request(zip_url, headers={"User-Agent": "CodeSentry-Ingestor"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            with zipfile.ZipFile(io.BytesIO(resp.read())) as z:
+                extract_tmp = os.path.join(base_storage, f"{repository_id}_tmp")
+                os.makedirs(extract_tmp, exist_ok=True)
+                z.extractall(extract_tmp)
+                items = os.listdir(extract_tmp)
+                if len(items) == 1 and os.path.isdir(os.path.join(extract_tmp, items[0])):
+                    inner = os.path.join(extract_tmp, items[0])
+                    for sub in os.listdir(inner):
+                        shutil.move(os.path.join(inner, sub), os.path.join(target_dir, sub))
+                else:
+                    for sub in items:
+                        shutil.move(os.path.join(extract_tmp, sub), os.path.join(target_dir, sub))
+                shutil.rmtree(extract_tmp, ignore_errors=True)
+        return target_dir
+    except Exception as e:
+        logger.error("Failed to download repository zip from %s: %s", zip_url, e)
+        raise RuntimeError(f"Could not clone or download repository from {repo_url}: {e}")
+
 @router.post("/index", response_model=IndexResponse)
 async def index_repository(
     req: IndexRequest,
@@ -37,7 +98,15 @@ async def index_repository(
     bm25: BM25Retriever = Depends(get_bm25_retriever)
 ):
     try:
-        chunks, stats = ingestor.ingest(req.repo_path, req.repository_id)
+        repo_path = req.repo_path
+        # If repo_path is not present or empty on this machine, clone/download using repo_url
+        if (not repo_path or not os.path.exists(repo_path)) and req.repo_url:
+            repo_path = ensure_repo_cloned(req.repository_id, req.repo_url)
+
+        if not repo_path or not os.path.exists(repo_path):
+            raise HTTPException(status_code=400, detail="Repository path not found and no valid repo_url provided")
+
+        chunks, stats = ingestor.ingest(repo_path, req.repository_id)
         if not chunks:
             return IndexResponse(
                 status="warning", total_files=stats["total_files"], total_chunks=0,
@@ -55,7 +124,11 @@ async def index_repository(
             languages=stats["languages"],
             message="Indexing complete"
         )
+    except HTTPException:
+        raise
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/query", response_model=QueryResponse)

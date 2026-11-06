@@ -94,7 +94,7 @@ export class RepositoryService {
       await repo.save();
 
       // 4. Call RAG service /index
-      const indexResult = await ragServiceClient.indexRepository(id, localPath);
+      const indexResult = await ragServiceClient.indexRepository(id, localPath, repo.url);
 
       // 6. When done, update status to 'ready' with stats
       repo.status = 'ready';

@@ -4,7 +4,8 @@ from app.models.chunk import SourceCitation, SecurityFinding
 
 class IndexRequest(BaseModel):
     repository_id: str
-    repo_path: str
+    repo_path: Optional[str] = None
+    repo_url: Optional[str] = None
 
 class IndexResponse(BaseModel):
     status: str

@@ -18,8 +18,8 @@ def _result(path="auth.py", score=0.5):
 
 
 def _fresh_observability(monkeypatch, **env):
-    for k in ("FI_API_KEY", "FI_SECRET_KEY"):
-        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("FI_API_KEY", "")
+    monkeypatch.setenv("FI_SECRET_KEY", "")
     for k, v in env.items():
         monkeypatch.setenv(k, v)
     from app.config import settings

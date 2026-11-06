@@ -22,7 +22,7 @@ class RagServiceClient {
     }
   }
 
-  async indexRepository(repositoryId: string, repoPath: string): Promise<any> {
+  async indexRepository(repositoryId: string, repoPath: string, repoUrl?: string): Promise<any> {
     const maxRetries = 4; // 5 attempts total
     const delays = [5000, 10000, 20000, 40000]; 
 
@@ -32,8 +32,9 @@ class RagServiceClient {
         const response = await this.client.post('/index', {
           repository_id: repositoryId,
           repo_path: repoPath,
+          repo_url: repoUrl,
         }, {
-          timeout: 90 * 1000, // 90 seconds to allow cold start
+          timeout: 120 * 1000, // 2 minutes to allow cold start and download
         });
         return response.data;
       } catch (error: any) {

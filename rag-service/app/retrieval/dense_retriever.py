@@ -16,8 +16,15 @@ class DenseRetriever:
     def __init__(self):
         if getattr(self, 'client', None) is None:
             settings = get_settings()
+            import os
             import chromadb
-            self.client = chromadb.PersistentClient(path=settings.CHROMA_PERSIST_DIR)
+            persist_dir = settings.CHROMA_PERSIST_DIR
+            try:
+                os.makedirs(persist_dir, exist_ok=True)
+            except OSError:
+                persist_dir = os.path.join(os.getcwd(), "data", "chroma")
+                os.makedirs(persist_dir, exist_ok=True)
+            self.client = chromadb.PersistentClient(path=persist_dir)
 
     def index(self, chunks: List[CodeChunk], embeddings: List[List[float]], repository_id: str):
         collection_name = f"repo_{repository_id}".replace("-", "_")

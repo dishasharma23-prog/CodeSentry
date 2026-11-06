@@ -5,9 +5,9 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = 'gemini'
     LLM_API_KEY: str = ''
     LLM_MODEL: str = 'gemini-2.5-flash'
-    CHROMA_PERSIST_DIR: str = '/data/chroma'
-    BM25_PERSIST_DIR: str = '/data/bm25'
-    REPO_STORAGE_PATH: str = './repos'
+    CHROMA_PERSIST_DIR: str = './data/chroma'
+    BM25_PERSIST_DIR: str = './data/bm25'
+    REPO_STORAGE_PATH: str = './data/repos'
     EMBEDDING_MODEL: str = 'all-MiniLM-L6-v2'
     RERANKER_MODEL: str = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
     TOP_K_RETRIEVAL: int = 20

@@ -20,7 +20,11 @@ class BM25Retriever:
             settings = get_settings()
             self.persist_dir = settings.BM25_PERSIST_DIR
             import os
-            os.makedirs(self.persist_dir, exist_ok=True)
+            try:
+                os.makedirs(self.persist_dir, exist_ok=True)
+            except OSError:
+                self.persist_dir = os.path.join(os.getcwd(), "data", "bm25")
+                os.makedirs(self.persist_dir, exist_ok=True)
             self.cache = {}
             self._initialized = True
 
