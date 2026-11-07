@@ -6,6 +6,13 @@ from rank_bm25 import BM25L
 from app.models.chunk import CodeChunk, RetrievalResult
 from app.config.settings import get_settings
 
+# common English words that appear in almost every question and add noise to keyword matching
+STOPWORDS = {
+    "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "is", "are", "was", "be", "it", "its", "this",
+    "that", "with", "as", "at", "by", "from", "how", "what", "which", "where", "when", "who", "why", "does", "do",
+    "did", "there", "any", "into", "before", "after", "each", "every", "one", "can", "if", "so", "than",
+}
+
 class BM25Retriever:
     _instance = None
     
@@ -29,9 +36,12 @@ class BM25Retriever:
             self._initialized = True
 
     def _tokenize(self, text: str) -> List[str]:
+        # split camelCase and PascalCase so "errorHandler" also matches "error handler"
+        text = re.sub(r'([a-z0-9])([A-Z])', r'\1 \2', text)
+        text = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1 \2', text)
         text = text.lower()
-        tokens = re.split(r'[\s.,_(){}\[\]:;="\'<>\+\-\*/\\]+', text)
-        return [t for t in tokens if len(t) > 1]
+        tokens = re.split(r'[^a-z0-9]+', text)
+        return [t for t in tokens if len(t) > 1 and t not in STOPWORDS]
 
     def index(self, chunks: List[CodeChunk], repository_id: str):
         tokenized_corpus = [self._tokenize(c.source_code) for c in chunks]
