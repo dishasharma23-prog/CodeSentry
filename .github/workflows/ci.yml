@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MONGOMS_DISABLE_POSTINSTALL: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx jest --verbose
+
+  rag-service:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: rag-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install (CPU-only PyTorch keeps the install small)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - run: python -m pytest -v tests
+      - name: Retrieval evaluation (precision@k, recall@k, MRR)
+        run: python evals/retrieval_eval.py --all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retrieval-eval
+          path: rag-service/evals/results/retrieval.json
