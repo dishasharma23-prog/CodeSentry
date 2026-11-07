@@ -42,6 +42,13 @@ export const errorHandler = (
     return;
   }
 
+  // body-parser errors (malformed JSON, body too large) are the client's fault, not the server's
+  const status = (err as any).status ?? (err as any).statusCode;
+  if ((err as any).type && typeof status === 'number' && status >= 400 && status < 500) {
+    res.status(status).json({ error: true, message: 'Invalid request body', statusCode: status });
+    return;
+  }
+
   logger.error(`[UnhandledError] ${err.message}`, { stack: err.stack });
   
   res.status(500).json({
