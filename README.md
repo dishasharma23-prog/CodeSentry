@@ -131,6 +131,31 @@ Each answer is scored for **code groundedness** (are claims about the code backe
 
 ---
 
+## Testing & Retrieval Quality
+
+Every push runs the CI workflow (`.github/workflows/ci.yml`):
+
+- **Backend API tests** (Jest + Supertest, 20 tests): request validation with Zod (bad or look-alike GitHub URLs,
+  malformed JSON, out-of-range `top_k`, non-UUID ids), 404s for missing repositories, and no internal error details
+  leaked in production. `cd backend && npx jest`
+- **RAG service tests** (pytest): AST chunking, BM25, ingestion and repository isolation. `cd rag-service && pytest tests`
+- **Retrieval evaluation**: 24 hand-labelled questions about this codebase, each with the files that answer it
+  (`rag-service/evals/retrieval_questions.json`). The script indexes the repository with the service's own ingestor and
+  retrievers and reports precision@k, recall@k and MRR per method:
+
+| Method | Recall@1 | Recall@3 | Recall@5 | MRR |
+|---|---|---|---|---|
+| BM25 (keywords) | 0.188 | 0.396 | 0.521 | 0.431 |
+| Dense (embeddings) | 0.375 | 0.625 | 0.750 | 0.613 |
+| Hybrid (RRF) | 0.396 | 0.729 | 0.792 | 0.648 |
+| Hybrid + cross-encoder rerank | 0.333 | 0.792 | **0.875** | 0.627 |
+
+```bash
+cd rag-service
+python evals/retrieval_eval.py          # BM25 only, no model download
+python evals/retrieval_eval.py --all    # all four methods
+```
+
 ## Key Features
 
 *   **Hybrid Retrieval (Dense + Sparse):** Combines contextual understanding of embeddings with the exact-keyword matching of BM25, fused via Reciprocal Rank Fusion (RRF).
